@@ -1,0 +1,43 @@
+services:
+  frontend_nginx:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - auth_api
+    networks:
+      - appnet
+
+  auth_api:
+    build: ./auth_api
+    command: gunicorn -b 0.0.0.0:5000 app:app
+    ports:
+      - "5000:5000"
+    environment:
+      DATABASE_HOST: postgres_db
+      DATABASE_NAME: authdb
+      DATABASE_USER: admin
+      DATABASE_PASSWORD: admin
+    depends_on:
+      - postgres_db
+    networks:
+      - appnet
+
+  postgres_db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: authdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge
